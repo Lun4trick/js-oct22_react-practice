@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './App.scss';
 import cn from 'classnames';
 
@@ -16,23 +16,38 @@ const getUser = (ownerId: number | undefined) => (
 
 const productsWithAllInfo = productsFromServer.map(product => (
   {
-  ...product,
-  category: getCategory(product.categoryId),
-  owner: getUser(getCategory(product.categoryId)?.ownerId),
-  }))
+    ...product,
+    category: getCategory(product.categoryId),
+    owner: getUser(getCategory(product.categoryId)?.ownerId),
+  }));
 
 export const App: React.FC = () => {
+  const [currentProducts, setCurrentProducts] = useState(productsWithAllInfo);
   const [selectedUser, setSelectedUser] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState(0);
+  const [currentSearch, setCurrentSearch] = useState('');
 
-  const filteredByCategory = selectedCategory
-    ? productsWithAllInfo
-      .filter(product => product.categoryId === selectedCategory)
-    : productsWithAllInfo;
+  useEffect(() => {
+    if (selectedUser) {
+      setCurrentProducts(
+        () => productsWithAllInfo
+          .filter(product => product.owner?.id === selectedUser),
+      );
+    }
 
-  const filteredByOwner = selectedUser
-    ? filteredByCategory.filter(product => product.owner?.id === selectedUser)
-    : productsWithAllInfo;
+    setCurrentProducts(
+      () => productsWithAllInfo
+        .filter(product => product.name.includes(currentSearch)),
+    );
+
+    if (selectedCategory) {
+      setCurrentProducts(
+        () => productsWithAllInfo.filter(
+          product => product.categoryId === selectedCategory,
+        ),
+      );
+    }
+  }, [selectedCategory, selectedUser, currentSearch]);
 
   return (
     <div className="section">
@@ -75,7 +90,8 @@ export const App: React.FC = () => {
                   type="text"
                   className="input"
                   placeholder="Search"
-                  value="qwe"
+                  value={currentSearch}
+                  onChange={(event) => setCurrentSearch(event.target.value)}
                 />
 
                 <span className="icon is-left">
@@ -195,7 +211,7 @@ export const App: React.FC = () => {
 
             <tbody>
 
-              {filteredByOwner.map((product) => (
+              {currentProducts.map((product) => (
                 <tr data-cy="Product">
                   <td className="has-text-weight-bold" data-cy={product.id}>
                     {product.id}
