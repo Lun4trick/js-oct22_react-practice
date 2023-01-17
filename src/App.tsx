@@ -27,26 +27,33 @@ export const App: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState(0);
   const [currentSearch, setCurrentSearch] = useState('');
 
-  useEffect(() => {
-    if (selectedUser) {
-      setCurrentProducts(
-        () => productsWithAllInfo
-          .filter(product => product.owner?.id === selectedUser),
-      );
-    }
-
-    setCurrentProducts(
-      () => productsWithAllInfo
-        .filter(product => product.name.includes(currentSearch)),
-    );
+  const filterProducts = () => {
+    let result = productsWithAllInfo
+      .filter(product => (
+        product.name.toLocaleLowerCase().includes(currentSearch.toLowerCase())
+      ));
 
     if (selectedCategory) {
-      setCurrentProducts(
-        () => productsWithAllInfo.filter(
-          product => product.categoryId === selectedCategory,
-        ),
-      );
+      result = result
+        .filter(product => product.categoryId === selectedCategory);
     }
+
+    if (selectedUser) {
+      result = result
+        .filter(product => product.category?.ownerId === selectedUser);
+    }
+
+    return result;
+  };
+
+  const resetHandler = () => {
+    setSelectedUser(0);
+    setSelectedCategory(0);
+    setCurrentSearch('');
+  };
+
+  useEffect(() => {
+    setCurrentProducts(filterProducts());
   }, [selectedCategory, selectedUser, currentSearch]);
 
   return (
@@ -140,6 +147,7 @@ export const App: React.FC = () => {
                 data-cy="ResetAllButton"
                 href="#/"
                 className="button is-link is-outlined is-fullwidth"
+                onClick={resetHandler}
 
               >
                 Reset all filters
@@ -149,9 +157,11 @@ export const App: React.FC = () => {
         </div>
 
         <div className="box table-container">
-          <p data-cy="NoMatchingMessage">
-            No products matching selected criteria
-          </p>
+          { !currentProducts.length && (
+            <p data-cy="NoMatchingMessage">
+              No products matching selected criteria
+            </p>
+          )}
 
           <table
             data-cy="ProductTable"
